@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="proj.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="676"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title=".Browsables" custom_title="0" dock_id="6" table="0,10:Browsables"/><dock_state state="000000ff00000000fd00000001000000020000043c000002b4fc0100000002fb000000160064006f0063006b00420072006f007700730065003101000000000000043c0000000000000000fb000000160064006f0063006b00420072006f007700730065003601000000000000043c0000011800ffffff0000043c0000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings><table schema="" name="Browsables" show_row_id="0" encoding="" plot_x_axis="" unlock_view_pk="_rowid_" freeze_columns="0"><sort/><column_widths/><filter_values/><conditional_formats/><row_id_formats/><display_formats/><hidden_columns/><plot_y_axes/><global_filter/></table></browse_table_settings></tab_browse><tab_sql><sql name="SQL 1*">use pizza_sales;
+select * from pizza_sales;
+
+select * from pizza_sales where pizza_size='M';
+
+select count(distinct order_id)
+from pizza_sales;
+
+select round(cast(sum(total_price) as real) / count(distinct order_id),2)  as average_order
+from pizza_sales;
+
+select CASE 
+strftime ('%w',order_date)
+when '0' then 'Sunday'
+
+end as order_day,
+count(distinct order_id) as total_orders
+from pizza_sales 
+group by 
+
+
+select order_date from pizza_sales;
+
+select strftime('%w',order_date),count(distinct order_id) as total_orders
+from pizza_sales
+group by strftime('%w',order_date)
+order by total_orders desc;
+
+select case 
+strftime('%w',
+substr(order_date,7,4)||'-'||
+substr(order_date,4,2)||'-'||
+substr(order_date,1,2)) 
+when '0' then 'sunday'
+when '1' then 'monday'
+when '2' then 'tuesday'
+when '3' then 'wednesday'
+when '4' then 'thursday'
+when '5' then 'friday'
+when '6' then 'saturday'
+end as order_day,
+count(distinct order_id) as total_orders
+from pizza_sales
+group by order_day
+order by total_orders desc;
+
+select CASE
+substr(order_date,4,2)
+when '01' then 'january'
+when '02' then 'february'
+when '03' then 'march'
+when '04' then 'april'
+when '05' then 'may'
+when '06' then 'june'
+when '07' then 'july'
+when '08' then 'august'
+when '09' then 'september'
+when '10' then 'october'
+when '11' then 'November'
+when '12' then 'December'
+end as order_month,
+count(distinct order_id) 
+as total_orders
+from pizza_sales 
+group by order_month
+order by total_orders desc;
+
+select strftime('%H',order_time) as order_hour,
+count(distinct order_id) as total_orders
+from pizza_sales 
+group by strftime('%H',order_time)
+order by total_orders desc;
+
+alter table pizza_sales
+add order_year int;
+
+update pizza_sales
+set order_year=substr(order_date,7,4);
+
+--windows function
+select pizza_name,total_price,
+avg(total_price)over()as overall_avg_price
+from pizza_sales;
+
+-- Find the total sales revenue and display it along with every pizza record.
+select pizza_name,total_price,
+sum(total_price) over() as overall_total_pizza
+from pizza_sales;
+
+-- Find the maximum unit price among all pizzas and display it along with every pizza record.
+select pizza_name,unit_price,
+max(unit_price) over() as max_pizza
+from pizza_sales;
+
+-- Find the average total price for each pizza category and display it for every pizza.
+select pizza_category,pizza_name,total_price,
+avg(total_price) over(partition by pizza_category)
+as avg_price from pizza_sales;
+
+-- Find the total revenue for each pizza category and display it for every pizza.
+select pizza_category,pizza_name,total_price,
+sum(total_price) over(partition by pizza_category)
+as total_revenue from pizza_sales;
+
+-- Find the number of pizza records for each pizza size and display it for every pizza.
+select pizza_id,pizza_name,pizza_category,pizza_size,
+count(pizza_id) over(partition by pizza_size)
+as pizza_record 
+from pizza_sales;
+
+-- Assign a unique row number to every pizza based on total price from highest to lowest.
+select pizza_id,pizza_size,total_price,
+row_number() over(order by total_price desc) as r_number 
+from pizza_sales;
+
+--Rank all pizzas based on total price from highest to lowest.
+select pizza_id,pizza_name,pizza_size,total_price,
+rank() over(order by total_price desc) 
+as ranks
+from pizza_sales;
+
+-- Assign a dense rank to all pizzas based on total price from highest to lowest.
+select pizza_id,pizza_name,total_price,
+dense_rank() over(order by total_price desc)
+as denses
+from pizza_sales;
+
+-- Rank pizzas based on total price within each pizza category.
+select pizza_id,pizza_category,total_price,
+rank() over(partition by pizza_category order by total_price)
+as ranks
+from pizza_sales;
+
+-- Find the highest-priced pizza in each pizza category.
+select pizza_name,pizza_category,total_price 
+from(select pizza_name,pizza_category,total_price,
+row_number() over(partition by pizza_category order by total_price desc) as ran 
+from pizza_sales) as ranked where ran=1;
+
+-- Find the top 2 highest-priced pizzas from each pizza category.
+SELECT *
+FROM (SELECT pizza_category, pizza_name, total_price,
+RANK() OVER (PARTITION BY pizza_category ORDER BY unit_price DESC) as prices
+FROM pizza_sales) as rankes
+WHERE prices &lt;= 2;
+
+--Display each pizza's total price along with the previous pizza's total price.
+select pizza_name,total_price,
+lag(total_price) over(partition by total_price order by pizza_id) as lags
+from pizza_sales;
+
+-- Find the difference between the current pizza's total price and the previous pizza's total price.
+SELECT pizza_category, pizza_name, total_price,
+total_price - LAG(total_price) 
+OVER (PARTITION BY pizza_category ORDER BY pizza_name)as difference
+FROM pizza_sales;
+
+-- Display each pizza's unit price along with the previous pizza's unit price.
+select pizza_name,unit_price,
+lag(unit_price) over(partition by unit_price order by pizza_id) as lags
+from pizza_sales;
+
+-- Display each pizza's total price along with the next pizza's total price.
+SELECT pizza_name, total_price,
+LEAD(total_price) OVER (partition by total_price ORDER BY pizza_name) as next_total_price
+FROM pizza_sales;
+
+-- Find the difference between the current pizza's total price and the next pizza's total price.
+SELECT pizza_category, pizza_name, total_price,
+total_price - LEAD(total_price) 
+OVER (PARTITION BY pizza_category ORDER BY pizza_name)as difference
+FROM pizza_sales;
+
+
+-- Display each pizza's unit price along with the next pizza's unit price.
+select pizza_name,unit_price,
+lead(unit_price) over(partition by unit_price order by pizza_name) as next_unit
+from pizza_sales;
+
+-- Create a pizza_type column using pizza_category:
+--a. Classic → Regular
+--b. Veggie → Vegetarian
+--c. Chicken → Non-Vegetarian
+-- d. Supreme → Special
+SELECT pizza_category,
+CASE
+WHEN pizza_category = 'Classic' THEN 'Regular'
+WHEN pizza_category = 'Veggie' THEN 'Vegetarian'
+WHEN pizza_category = 'Chicken' THEN 'Non-Vegetarian'
+WHEN pizza_category = 'Supreme' THEN 'Special'
+END pizza_type
+FROM pizza_sales;
+
+--Categorize pizzas based on unit_price:
+--a. Below 15 → Budget
+--b. 15–20 → Standard
+--c. Above 20 → Premium
+select unit_price,
+CASE
+when unit_price&lt;15 then 'Budget'
+when unit_price between 15 and 20 then 'Standard'
+when unit_price&gt;20 then 'Premium'
+end pizza_price
+from pizza_sales;</sql><current_tab id="0"/></tab_sql></sqlb_project>
